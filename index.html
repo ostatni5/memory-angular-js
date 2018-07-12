@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Memory</title>
+    <style>
+        [game-field] {
+            width: 400px;
+        }
+
+        timer {
+            display: block;
+            margin-bottom: 30px;
+            width: 400px;
+            position: relative;
+            padding: 5px;
+            text-align: center;
+            box-sizing: border-box;
+            border: 2px solid black;
+        }
+
+        timer .progress {
+
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background-color: grey;
+            z-index: -1;
+
+        }
+
+        dialogbox {
+            display: block;
+            margin-top: 30px;
+            width: 400px;
+            text-align: center;
+        }
+
+        dialogbox * {
+            clear: both;
+            float: left;
+            width: 100%;
+        }
+
+        [game-field] * {
+            user-drag: none;
+            user-select: none;
+            -moz-user-select: none;
+            -webkit-user-drag: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            width: 100px;
+            height: 100px;
+        }
+
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.6/angular-route.js"></script>
+    <script>
+        var shuffleArray = function(array) {
+            var m = array.length,
+                t, i;
+            while (m) {
+                i = Math.floor(Math.random() * m--);
+                t = array[m];
+                array[m] = array[i];
+                array[i] = t;
+            }
+            return array;
+        }
+        var app = angular.module("myApp", ["ngRoute"]);
+        var makewin, makelose;
+
+
+        app.directive('timer', function($interval, $location, $document) {
+            return {
+                scope: {},
+                link: function(scope, element, attrs) {
+                    var win = false;
+                    var lose = false;
+                    var maxTime = parseInt($location.path().slice(1, 3)) * 1000;
+                    var startTime = Date.now();
+                    var bar = document.querySelectorAll("timer .progress");
+                    var colorChanged = false;
+                    // console.log(bar);
+                    var styled = {};
+                    var timeoutId = $interval(function() {
+                        var now = Date.now();
+                        var remainTime = maxTime + startTime - now;
+                        remainTime = new Date(remainTime);
+                        var proc = remainTime / maxTime * 100;
+                        //bar[0].style.width = (proc) + "%";
+                        styled.width = (proc) + "%";
+                        // console.log(proc,proc<=20,colorChanged)
+                        if (proc <= 20 && !colorChanged) {
+                            //bar[0].style.backgroundColor = "#CD5C5C";
+                            styled["background-color"] = "#CD5C5C";
+                            colorChanged = true;
+                        }
+                        scope.time = String("00" + remainTime.getMinutes()).slice(-2) + ":" + String("00" + remainTime.getSeconds()).slice(-2) + "." + String("000" + remainTime.getMilliseconds()).slice(-3);
+                        if (proc <= 0 && !win || lose) {
+                            scope.$emit('time_over');
+
+                            $interval.cancel(timeoutId);
+                            proc = 0;
+                            scope.time = "00:00.000";
+                            console.log("time_over");
+                            //bar[0].style.width = (proc) + "%";
+                            styled.width = (proc) + "%";
+                        }
+                        scope.style = styled;
+                    }, 1);
+                    makelose = function() {
+                        lose = true;
+                        proc = 0;
+                        scope.$apply();
+                    }
+
+                    scope.$on('win_game', function(e, data) {
+                        win = true;
+                        $interval.cancel(timeoutId);
+
+                    });
+
+                    element.on('$destroy', function() {
+                        $interval.cancel(timeoutId);
+                    });
+                },
+                templateUrl: 'timer.html'
+            };
+        });
+
+        app.directive('dialogbox', function($location, $document) {
+            return {
+                scope: {},
+                link: function(scope, element, attrs) {
+                    scope.title = "GRA TRWA";
+                    scope.$on('win_game', function(e, data) {
+                        scope.title = "WYGRAŁEŚ";
+                    });
+                    scope.$on('lose_game', function(e, data) {
+                        scope.title = "KONIEC GRY";
+                        console.log("koniec")
+                    });
+
+                    element.on('$destroy', function() {
+
+                    });
+                },
+                templateUrl: 'dialog.html'
+            };
+        });
+
+
+        app.controller('MainController', function($scope, $location, $timeout) {
+            var win = false;
+            var czyWybrane;
+            $scope.show_game = true;
+            $scope.klik = 0;
+            $scope.el1 = null;
+            $scope.el2 = null;
+            $scope.clearTimeout = null;
+            if ($location.path() != "/" && $location.path() != "/30" && $location.path() != "/60" && $location.path() != "/90")
+                $location.path("/");
+
+            $scope.name = $location.path().slice(1, 3);
+
+            makewin = function() {
+                $scope.hide = $scope.table;
+
+                chechWin();
+                $scope.$apply();
+            }
+
+
+
+            $scope.table = ["1", "1", "2", "2", "3", "3", "4", "4", "5", "5", "6", "6", "7", "7", "8", "8"];
+            $scope.hide = ["0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"];
+
+            shuffleArray($scope.table);
+
+            var chechWin = function() {
+                var wygrana = true;
+                for (var i = 0; i < $scope.hide.length; i++) {
+                    if ($scope.hide[i] == 0) {
+                        wygrana = false;
+                        break;
+                    }
+                }
+                if (wygrana) {
+                    win = true;
+                    $scope.$broadcast('win_game');
+                }
+
+            }
+
+            $scope.$on('time_over', function(e, data) {
+                $scope.$broadcast('lose_game');
+                $scope.show_game = false;
+            });
+
+            var timeoutHide;
+            var czasTrwa = false;
+            $scope.myClick = function(i, e) {
+
+                if (!czasTrwa) {
+                    src = e.target.src;
+                    czyWybrane = src.slice(-5, -4); //0 hide;
+                    if (czyWybrane == 0) {
+                        $scope.hide[i] = $scope.table[i];
+                        if ($scope.klik == 0) {
+                            $scope.el1 = i;
+                            $scope.klik++;
+                        } else if ($scope.klik == 1) {
+                            $scope.el2 = i;
+                            $scope.klik++;
+                            if ($scope.hide[$scope.el1] == $scope.hide[$scope.el2]) {
+                                $scope.klik = 0
+                            } else {
+                                czasTrwa = true;
+                                timeoutHide = $timeout(function() {
+                                    $scope.klik = 0;
+                                    $scope.hide[$scope.el1] = 0;
+                                    $scope.hide[$scope.el2] = 0;
+                                    czasTrwa = false;
+                                }, 1000)
+                            }
+                        } else {
+                            $timeout.cancel(timeoutHide);
+                            $scope.klik = 1;
+                            $scope.hide[$scope.el1] = 0;
+                            $scope.hide[$scope.el2] = 0;
+                            $scope.el1 = i;
+                        }
+                        chechWin();
+                    }
+                }
+            }
+
+        });
+
+        app.directive("gameField", function() {
+            return {
+                templateUrl: "gameField.html"
+            };
+        });
+
+
+
+
+        app.config(function($routeProvider) {
+            $routeProvider
+                .when("/", {
+                    templateUrl: "menu.html",
+                    controller: 'MainController'
+                })
+                .when("/30", {
+                    templateUrl: "game.html",
+                    controller: 'MainController'
+
+                })
+                .when("/60", {
+                    templateUrl: "game.html",
+                    controller: 'MainController'
+                })
+                .when("/90", {
+                    templateUrl: "game.html",
+                    controller: 'MainController'
+                })
+                .otherwise({
+                    redirectTo: "/"
+                })
+
+        });
+
+    </script>
+
+</head>
+
+<body ng-app="myApp">
+    <div ng-view>
+    </div>
+</body>
+
+</html>

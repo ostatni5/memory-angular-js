@@ -1,0 +1,24 @@
+http://imagemap-generator.dariodomi.de/
+http://htaccess.mwl.be/
+
+1. Routing
+	/tryb/30
+	/tryb/60
+	/tryb/90
+
+	https://www.w3schools.com/angular/angular_routing.asp
+	
+	- Firefox!!!
+	- dołącz bibliotekę
+	- ["ngRoute"]
+	- div ng-view
+	- app.config(function($routeProvider) {
+	- $location   (.path() -> /tryb/30)
+	
+2. dyrektywa własna
+	https://docs.angularjs.org/guide/directive
+
+	<div game-field></div>
+	<game-field></game-field>
+	
+	- angular.element

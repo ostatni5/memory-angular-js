@@ -1,6 +1,6 @@
 # Memory Game
 
-Memory game made in AngularJS for JavaScript course in secondary school.
+Memory game made in AngularJS for **JavaScript course in secondary school**.
 
 The game idea and graphics are not mines - were provided by the lecturer.
 
